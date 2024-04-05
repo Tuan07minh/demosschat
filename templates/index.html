@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSChat</title>
+</head>
+<body>
+    <h1>SSChat</h1>
+    <div id="chat-container">
+        <div id="chat-messages"></div>
+        <input type="text" id="message-input" placeholder="Nhập tin nhắn...">
+        <button id="send-button">Gửi</button>
+        <button id="voice-button">Voice</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const chatMessages = document.getElementById("chat-messages");
+            const messageInput = document.getElementById("message-input");
+            const sendButton = document.getElementById("send-button");
+            const voiceButton = document.getElementById("voice-button");
+
+            sendButton.addEventListener("click", sendMessage);
+            voiceButton.addEventListener("click", sendVoiceMessage);
+
+            function sendMessage() {
+                const message = messageInput.value;
+                if (message.trim() === "") return; 
+
+                appendMessage("Bạn: " + message);
+                messageInput.value = ""; 
+
+                sendMessageToServer(message);
+            }
+
+            function sendVoiceMessage() {
+                if ('webkitSpeechRecognition' in window) {
+                    const recognition = new webkitSpeechRecognition();
+                    recognition.lang = 'en-US';
+                    recognition.start();
+
+                    recognition.onresult = function(event) {
+                        const voiceMessage = event.results[0][0].transcript;
+                        appendMessage("Bạn (Voice): " + voiceMessage);
+                        sendMessageToServer(voiceMessage);
+                    };
+                } else {
+                    alert("Trình duyệt của bạn không hỗ trợ chức năng nhận dạng giọng nói.");
+                }
+            }
+
+            function sendMessageToServer(message) {
+                fetch("/send_message", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: "message=" + encodeURIComponent(message)
+                })
+                .then(response => response.text())
+                .then(data => {
+                    appendMessage("Server: " + data);
+                })
+                .catch(error => {
+                    console.error("Lỗi khi gửi tin nhắn: ", error);
+                });
+            }
+
+            function appendMessage(message) {
+                const messageElement = document.createElement("div");
+                messageElement.textContent = message;
+                chatMessages.appendChild(messageElement);
+            }
+        });
+    </script>
+</body>
+</html>
